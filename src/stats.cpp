@@ -19,7 +19,6 @@
 
 #include "stats.h"
 #include "mt.h"
-#include "shared_ptr.h"
 #include "settings.h"
 #include <cmath>
 #include <string>
@@ -28,6 +27,7 @@
 #include <fstream>
 #include <algorithm>
 #include <cstdlib>
+#include <memory>
 
 // define these classes just locally
 namespace stats {
@@ -177,15 +177,15 @@ namespace stats {
 
 	static void get_psnr_tp(const VUCHAR& ref, const std::vector<bool>& v_ok, const std::vector<VUCHAR>& streams, std::vector<double>& res) {
 		const unsigned int 			sz = v_ok.size();
-		std::vector<shared_ptr<psnr_job> >	v_jobs;
+		std::vector<std::shared_ptr<psnr_job> >	v_jobs;
 		for(unsigned int i =0; i < sz; ++i) {
 			if (v_ok[i]) {
-				v_jobs.push_back(new psnr_job(&ref[0], &(streams[i][0]), ref.size(), res[i]));
+				v_jobs.emplace_back(new psnr_job(&ref[0], &(streams[i][0]), ref.size(), res[i]));
 				__stats_tp.add(v_jobs.rbegin()->get());
 			} else res[i] = 0.0;
 		}
 		//wait for all
-		for(std::vector<shared_ptr<psnr_job> >::iterator it = v_jobs.begin(); it != v_jobs.end(); ++it) {
+		for(std::vector<std::shared_ptr<psnr_job> >::iterator it = v_jobs.begin(); it != v_jobs.end(); ++it) {
 			(*it)->wait();
 			(*it) = 0;
 		}
@@ -210,15 +210,15 @@ namespace stats {
 
 	static void get_ssim_tp(const VUCHAR& ref, const std::vector<bool>& v_ok, const std::vector<VUCHAR>& streams, std::vector<double>& res, const unsigned int& x, const unsigned int& y, const unsigned int& b_sz) {
 		const unsigned int 			sz = v_ok.size();
-		std::vector<shared_ptr<ssim_job> >	v_jobs;
+		std::vector<std::shared_ptr<ssim_job> >	v_jobs;
 		for(unsigned int i =0; i < sz; ++i) {
 			if (v_ok[i]) {
-				v_jobs.push_back(new ssim_job(&ref[0], &(streams[i][0]), x, y, b_sz, res[i]));
+				v_jobs.emplace_back(new ssim_job(&ref[0], &(streams[i][0]), x, y, b_sz, res[i]));
 				__stats_tp.add(v_jobs.rbegin()->get());
 			} else res[i] = 0.0;
 		}
 		//wait for all
-		for(std::vector<shared_ptr<ssim_job> >::iterator it = v_jobs.begin(); it != v_jobs.end(); ++it) {
+		for(std::vector<std::shared_ptr<ssim_job> >::iterator it = v_jobs.begin(); it != v_jobs.end(); ++it) {
 			(*it)->wait();
 			(*it) = 0;
 		}
@@ -265,17 +265,17 @@ namespace stats {
 
 	static void rgb_2_hsi_tp(VUCHAR& ref, const std::vector<bool>& v_ok, std::vector<VUCHAR>& streams) {
 		const unsigned int 			sz = v_ok.size();
-		std::vector<shared_ptr<hsi_job> >	v_jobs;
-		v_jobs.push_back(new hsi_job(&ref[0], ref.size()));
+		std::vector<std::shared_ptr<hsi_job> >	v_jobs;
+		v_jobs.emplace_back(new hsi_job(&ref[0], ref.size()));
 		__stats_tp.add(v_jobs.rbegin()->get());
 		for(unsigned int i =0; i < sz; ++i) {
 			if (v_ok[i]) {
-				v_jobs.push_back(new hsi_job(&(streams[i][0]), streams[i].size()));
+				v_jobs.emplace_back(new hsi_job(&(streams[i][0]), streams[i].size()));
 				__stats_tp.add(v_jobs.rbegin()->get());
 			}
 		}
 		//wait for all
-		for(std::vector<shared_ptr<hsi_job> >::iterator it = v_jobs.begin(); it != v_jobs.end(); ++it) {
+		for(std::vector<std::shared_ptr<hsi_job> >::iterator it = v_jobs.begin(); it != v_jobs.end(); ++it) {
 			(*it)->wait();
 			(*it) = 0;
 		}
@@ -283,17 +283,17 @@ namespace stats {
 
 	static void rgb_2_YCbCr_tp(VUCHAR& ref, const std::vector<bool>& v_ok, std::vector<VUCHAR>& streams) {
 		const unsigned int 			sz = v_ok.size();
-		std::vector<shared_ptr<YCbCr_job> >	v_jobs;
-		v_jobs.push_back(new YCbCr_job(&ref[0], ref.size()));
+		std::vector<std::shared_ptr<YCbCr_job> >	v_jobs;
+		v_jobs.emplace_back(new YCbCr_job(&ref[0], ref.size()));
 		__stats_tp.add(v_jobs.rbegin()->get());
 		for(unsigned int i =0; i < sz; ++i) {
 			if (v_ok[i]) {
-				v_jobs.push_back(new YCbCr_job(&(streams[i][0]), streams[i].size()));
+				v_jobs.emplace_back(new YCbCr_job(&(streams[i][0]), streams[i].size()));
 				__stats_tp.add(v_jobs.rbegin()->get());
 			}
 		}
 		//wait for all
-		for(std::vector<shared_ptr<YCbCr_job> >::iterator it = v_jobs.begin(); it != v_jobs.end(); ++it) {
+		for(std::vector<std::shared_ptr<YCbCr_job> >::iterator it = v_jobs.begin(); it != v_jobs.end(); ++it) {
 			(*it)->wait();
 			(*it) = 0;
 		}
@@ -301,17 +301,17 @@ namespace stats {
 
 	static void rgb_2_Y_tp(VUCHAR& ref, const std::vector<bool>& v_ok, std::vector<VUCHAR>& streams) {
 		const unsigned int 			sz = v_ok.size();
-		std::vector<shared_ptr<Y_job> >		v_jobs;
-		v_jobs.push_back(new Y_job(&ref[0], ref.size()));
+		std::vector<std::shared_ptr<Y_job> >		v_jobs;
+		v_jobs.emplace_back(new Y_job(&ref[0], ref.size()));
 		__stats_tp.add(v_jobs.rbegin()->get());
 		for(unsigned int i =0; i < sz; ++i) {
 			if (v_ok[i]) {
-				v_jobs.push_back(new Y_job(&(streams[i][0]), streams[i].size()));
+				v_jobs.emplace_back(new Y_job(&(streams[i][0]), streams[i].size()));
 				__stats_tp.add(v_jobs.rbegin()->get());
 			}
 		}
 		//wait for all
-		for(std::vector<shared_ptr<Y_job> >::iterator it = v_jobs.begin(); it != v_jobs.end(); ++it) {
+		for(std::vector<std::shared_ptr<Y_job> >::iterator it = v_jobs.begin(); it != v_jobs.end(); ++it) {
 			(*it)->wait();
 			(*it) = 0;
 		}

@@ -26,7 +26,6 @@
 #include <getopt.h>
 #include <map>
 #include "mt.h"
-#include "shared_ptr.h"
 #include "qav.h"
 #include "settings.h"
 #include "stats.h"
@@ -69,7 +68,7 @@ public:
 };
 
 typedef std::vector<unsigned char>	VUCHAR;
-typedef shared_ptr<qav::qvideo>		SP_QVIDEO;
+typedef std::shared_ptr<qav::qvideo>		SP_QVIDEO;
 struct vp_data {
 	mt::Semaphore	prod;
 	VUCHAR		buf;
@@ -77,8 +76,8 @@ struct vp_data {
 	SP_QVIDEO	video;
 	std::string	name;
 };
-typedef std::vector<shared_ptr<vp_data> >		V_VPDATA;
-typedef std::vector<shared_ptr<video_producer> >	V_VPTH;
+typedef std::vector<std::shared_ptr<vp_data> >		V_VPDATA;
+typedef std::vector<std::shared_ptr<video_producer> >	V_VPTH;
 
 const std::string	__qpsnr__ = "qpsnr",
 			__version__ = "0.2.5";
@@ -312,9 +311,9 @@ int main(int argc, char *argv[]) {
 		V_VPDATA	v_data;
 		for(int i = param; i < argc; ++i) {
 			try {
-				shared_ptr<vp_data>	vpd(new vp_data);
+				std::shared_ptr<vp_data>	vpd(new vp_data);
 				vpd->name = get_filename(argv[i]);
-				vpd->video = new qav::qvideo(argv[i], ref_sz.x, ref_sz.y);
+				vpd->video = std::make_shared<qav::qvideo>(argv[i], ref_sz.x, ref_sz.y);
 				if (vpd->video->get_fps_k() != ref_fps_k) {
 					if (settings::IGNORE_FPS) {
 						LOG_WARNING << '[' << argv[i] << "] has different FPS (" << vpd->video->get_fps_k()/1000 << ')' << std::endl;
@@ -347,7 +346,7 @@ int main(int argc, char *argv[]) {
 		video_producer	ref_vpth(ref_frame, ref_prod, sem_cons, ref_buf, ref_video, glb_exit, skip_next_frame);
 		V_VPTH		v_th;
 		for(V_VPDATA::iterator it = v_data.begin(); it != v_data.end(); ++it)
-			v_th.push_back(new video_producer((*it)->frame, (*it)->prod, sem_cons, (*it)->buf, *((*it)->video), glb_exit, skip_next_frame));
+			v_th.emplace_back(new video_producer((*it)->frame, (*it)->prod, sem_cons, (*it)->buf, *((*it)->video), glb_exit, skip_next_frame));
 		// we'll need some tmp buffers
 		VUCHAR			t_ref_buf;
 		std::vector<VUCHAR>	t_bufs(v_data.size());
