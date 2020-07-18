@@ -88,8 +88,8 @@ namespace stats {
 			}
 
 		double	avg = 0.0;
-		for(std::vector<double>::const_iterator it = ssim_accum.begin(); it != ssim_accum.end(); ++it)
-			avg += *it;
+		for(const auto& v : ssim_accum)
+			avg += v;
 		return avg/ssim_accum.size();
 	}
 
@@ -185,9 +185,9 @@ namespace stats {
 			} else res[i] = 0.0;
 		}
 		//wait for all
-		for(std::vector<std::shared_ptr<psnr_job> >::iterator it = v_jobs.begin(); it != v_jobs.end(); ++it) {
-			(*it)->wait();
-			(*it) = 0;
+		for(auto& j : v_jobs) {
+			j->wait();
+			j = 0;
 		}
 	}
 
@@ -218,9 +218,9 @@ namespace stats {
 			} else res[i] = 0.0;
 		}
 		//wait for all
-		for(std::vector<std::shared_ptr<ssim_job> >::iterator it = v_jobs.begin(); it != v_jobs.end(); ++it) {
-			(*it)->wait();
-			(*it) = 0;
+		for(auto& j : v_jobs) {
+			j->wait();
+			j = 0;
 		}
 	}
 
@@ -275,9 +275,9 @@ namespace stats {
 			}
 		}
 		//wait for all
-		for(std::vector<std::shared_ptr<hsi_job> >::iterator it = v_jobs.begin(); it != v_jobs.end(); ++it) {
-			(*it)->wait();
-			(*it) = 0;
+		for(auto& j : v_jobs) {
+			j->wait();
+			j = 0;
 		}
 	}
 
@@ -293,9 +293,9 @@ namespace stats {
 			}
 		}
 		//wait for all
-		for(std::vector<std::shared_ptr<YCbCr_job> >::iterator it = v_jobs.begin(); it != v_jobs.end(); ++it) {
-			(*it)->wait();
-			(*it) = 0;
+		for(auto& j : v_jobs) {
+			j->wait();
+			j = 0;
 		}
 	}
 
@@ -311,9 +311,9 @@ namespace stats {
 			}
 		}
 		//wait for all
-		for(std::vector<std::shared_ptr<Y_job> >::iterator it = v_jobs.begin(); it != v_jobs.end(); ++it) {
-			(*it)->wait();
-			(*it) = 0;
+		for(auto& j : v_jobs) {
+			j->wait();
+			j = 0;
 		}
 	}
 
