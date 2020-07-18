@@ -331,7 +331,7 @@ int main(int argc, char *argv[]) {
 		LOG_INFO << "Max frames: " << ((settings::MAX_FRAMES > 0) ? settings::MAX_FRAMES : 0) << std::endl;
 		// create the stats analyzer (like the psnr)
 		LOG_INFO << "Analyzer set: " << settings::ANALYZER << std::endl;
-		std::auto_ptr<stats::s_base>	s_analyzer(stats::get_analyzer(settings::ANALYZER.c_str(), v_data.size(), ref_sz.x, ref_sz.y, std::cout));
+		std::unique_ptr<stats::s_base>	s_analyzer(stats::get_analyzer(settings::ANALYZER.c_str(), v_data.size(), ref_sz.x, ref_sz.y, std::cout));
 		// set the default values, in case will get overwritten
 		s_analyzer->set_parameter("fpa", XtoS(ref_fps_k/1000));
 		s_analyzer->set_parameter("blocksize", "8");
