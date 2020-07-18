@@ -80,7 +80,7 @@ typedef std::vector<std::shared_ptr<vp_data> >		V_VPDATA;
 typedef std::vector<std::shared_ptr<video_producer> >	V_VPTH;
 
 const std::string	__qpsnr__ = "qpsnr",
-			__version__ = "0.2.5";
+			__version__ = "0.3.0";
 
 void print_help(void) {
 	std::cerr <<	__qpsnr__ << " v" << __version__ << " - (C) 2010, 2011, 2012 E. Oriani - 2020 E. Oriani, Paul Caron\n"
