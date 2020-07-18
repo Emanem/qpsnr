@@ -26,7 +26,6 @@
 #include <getopt.h>
 #include <map>
 #include "mt.h"
-#include "shared_ptr.h"
 #include "qav.h"
 #include "settings.h"
 #include "stats.h"
@@ -69,7 +68,7 @@ public:
 };
 
 typedef std::vector<unsigned char>	VUCHAR;
-typedef shared_ptr<qav::qvideo>		SP_QVIDEO;
+typedef std::shared_ptr<qav::qvideo>		SP_QVIDEO;
 struct vp_data {
 	mt::Semaphore	prod;
 	VUCHAR		buf;
@@ -77,11 +76,11 @@ struct vp_data {
 	SP_QVIDEO	video;
 	std::string	name;
 };
-typedef std::vector<shared_ptr<vp_data> >		V_VPDATA;
-typedef std::vector<shared_ptr<video_producer> >	V_VPTH;
+typedef std::vector<std::shared_ptr<vp_data> >		V_VPDATA;
+typedef std::vector<std::shared_ptr<video_producer> >	V_VPTH;
 
 const std::string	__qpsnr__ = "qpsnr",
-			__version__ = "0.2.5";
+			__version__ = "0.3.0";
 
 void print_help(void) {
 	std::cerr <<	__qpsnr__ << " v" << __version__ << " - (C) 2010, 2011, 2012 E. Oriani - 2020 E. Oriani, Paul Caron\n"
@@ -249,14 +248,14 @@ int parse_options(int argc, char *argv[], std::map<std::string, std::string>& ao
 namespace producers_utils {
 	void start(video_producer& ref_vpth, V_VPTH& v_th) {
 		ref_vpth.start();
-		for(V_VPTH::iterator it = v_th.begin(); it != v_th.end(); ++it)
-			(*it)->start();
+		for(auto& i : v_th)
+			i->start();
 	}
 
 	void stop(video_producer& ref_vpth, V_VPTH& v_th) {
 		ref_vpth.join();
-		for(V_VPTH::iterator it = v_th.begin(); it != v_th.end(); ++it)
-			(*it)->join();
+		for(auto& i : v_th)
+			i->join();
 	}
 
 	void sync(mt::Semaphore& sem_cons, const int& n_v_th) {
@@ -268,14 +267,14 @@ namespace producers_utils {
 		// init all the semaphores
 		sem_cons.push();
 		ref_prod.push();
-		for(V_VPDATA::iterator it = v_data.begin(); it != v_data.end(); ++it)
-			(*it)->prod.push();
+		for(auto& i : v_data)
+			i->prod.push();
 	}
 
 	void unlock(mt::Semaphore& ref_prod, V_VPDATA& v_data) {
 		ref_prod.pop();
-		for(V_VPDATA::iterator it = v_data.begin(); it != v_data.end(); ++it)
-			(*it)->prod.pop();
+		for(auto& i : v_data)
+			i->prod.pop();
 	}
 
 	bool is_frame_skip(const int& frame_num) {
@@ -312,9 +311,9 @@ int main(int argc, char *argv[]) {
 		V_VPDATA	v_data;
 		for(int i = param; i < argc; ++i) {
 			try {
-				shared_ptr<vp_data>	vpd(new vp_data);
+				std::shared_ptr<vp_data>	vpd(new vp_data);
 				vpd->name = get_filename(argv[i]);
-				vpd->video = new qav::qvideo(argv[i], ref_sz.x, ref_sz.y);
+				vpd->video = std::make_shared<qav::qvideo>(argv[i], ref_sz.x, ref_sz.y);
 				if (vpd->video->get_fps_k() != ref_fps_k) {
 					if (settings::IGNORE_FPS) {
 						LOG_WARNING << '[' << argv[i] << "] has different FPS (" << vpd->video->get_fps_k()/1000 << ')' << std::endl;
@@ -331,14 +330,14 @@ int main(int argc, char *argv[]) {
 		LOG_INFO << "Max frames: " << ((settings::MAX_FRAMES > 0) ? settings::MAX_FRAMES : 0) << std::endl;
 		// create the stats analyzer (like the psnr)
 		LOG_INFO << "Analyzer set: " << settings::ANALYZER << std::endl;
-		std::auto_ptr<stats::s_base>	s_analyzer(stats::get_analyzer(settings::ANALYZER.c_str(), v_data.size(), ref_sz.x, ref_sz.y, std::cout));
+		std::unique_ptr<stats::s_base>	s_analyzer(stats::get_analyzer(settings::ANALYZER.c_str(), v_data.size(), ref_sz.x, ref_sz.y, std::cout));
 		// set the default values, in case will get overwritten
 		s_analyzer->set_parameter("fpa", XtoS(ref_fps_k/1000));
 		s_analyzer->set_parameter("blocksize", "8");
 		// load the passed parameters
-		for(std::map<std::string, std::string>::const_iterator it = aopt.begin(); it != aopt.end(); ++it) {
-			LOG_INFO << "Analyzer parameter: " << it->first << " = " << it->second << std::endl;
-			s_analyzer->set_parameter(it->first.c_str(), it->second.c_str());
+		for(const auto& i : aopt) {
+			LOG_INFO << "Analyzer parameter: " << i.first << " = " << i.second << std::endl;
+			s_analyzer->set_parameter(i.first, i.second);
 		}
 		// create all the threads
 		// this varibale holds a bool to say if we have to skip
@@ -346,8 +345,8 @@ int main(int argc, char *argv[]) {
 		bool skip_next_frame = producers_utils::is_frame_skip(1);
 		video_producer	ref_vpth(ref_frame, ref_prod, sem_cons, ref_buf, ref_video, glb_exit, skip_next_frame);
 		V_VPTH		v_th;
-		for(V_VPDATA::iterator it = v_data.begin(); it != v_data.end(); ++it)
-			v_th.push_back(new video_producer((*it)->frame, (*it)->prod, sem_cons, (*it)->buf, *((*it)->video), glb_exit, skip_next_frame));
+		for(auto& i : v_data)
+			v_th.emplace_back(new video_producer(i->frame, i->prod, sem_cons, i->buf, *(i->video), glb_exit, skip_next_frame));
 		// we'll need some tmp buffers
 		VUCHAR			t_ref_buf;
 		std::vector<VUCHAR>	t_bufs(v_data.size());
@@ -358,8 +357,8 @@ int main(int argc, char *argv[]) {
 		producers_utils::start(ref_vpth, v_th);
 		// print header, this has to be moved in the analyzer
 		std::cout << "Sample,";
-		for(V_VPDATA::const_iterator it = v_data.begin(); it != v_data.end(); ++it)
-			std::cout << (*it)->name << ',';
+		for(const auto& i : v_data)
+			std::cout << i->name << ',';
 		std::cout << std::endl;
 		while(!glb_exit) {
 			// wait for the consumer to be signalled 1 + n times
@@ -384,9 +383,10 @@ int main(int argc, char *argv[]) {
 			}
 			// vector of bool telling if everything is ok
 			std::vector<bool>	v_ok;
-			for(V_VPDATA::const_iterator it = v_data.begin(); it != v_data.end(); ++it)
-				if ((*it)->frame == cur_ref_frame) v_ok.push_back(true);
+			for(const auto& i : v_data) {
+				if (i->frame == cur_ref_frame) v_ok.push_back(true);
 				else v_ok.push_back(false);
+			}
 			// then swap the vectors
 			t_ref_buf.swap(ref_buf);
 			for(size_t i = 0; i < v_data.size(); ++i)
